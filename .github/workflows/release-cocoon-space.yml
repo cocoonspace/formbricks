@@ -1,0 +1,37 @@
+name: Docker Cocoon Space
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
+  DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/formbricks?schema=public"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Depot CLI
+        uses: depot/setup-action@v1
+
+      # Setup gcloud CLI
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+
+      - name: Build
+        id: build
+        run: |-
+          cp .cocoon-space/Dockerfile .
+          gcloud builds submit \
+            --quiet \
+            --gcs-log-dir=gs://cocoon-space-build-logs/formbricks \
+            --tag "europe-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/formbricks/$IMAGE_NAME:$GITHUB_REF_NAME"
