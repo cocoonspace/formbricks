@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - "v*"
-    branches:
-      - bk-1609-deploiement-conteneur
 
 env:
   # github.repository as <account>/<repo>
