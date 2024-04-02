@@ -35,4 +35,5 @@ jobs:
           cp .cocoon-space/Dockerfile .
           gcloud builds submit \
             --quiet \
+            --gcs-log-dir=gs://cocoon-space-build-logs/formbricks \
             --tag "europe-west1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/formbricks/$IMAGE_NAME:$GITHUB_REF_NAME"
