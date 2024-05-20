@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 
+import { sendInviteAcceptedEmail } from "@formbricks/email";
 import { authOptions } from "@formbricks/lib/authOptions";
 import { WEBAPP_URL } from "@formbricks/lib/constants";
-import { sendInviteAcceptedEmail } from "@formbricks/lib/emails/emails";
 import { deleteInvite, getInvite } from "@formbricks/lib/invite/service";
 import { verifyInviteToken } from "@formbricks/lib/jwt";
 import { createMembership } from "@formbricks/lib/membership/service";
@@ -17,7 +17,7 @@ import {
   WrongAccountContent,
 } from "./components/InviteContentComponents";
 
-export default async function InvitePage({ searchParams }) {
+const Page = async ({ searchParams }) => {
   const session = await getServerSession(authOptions);
 
   try {
@@ -52,4 +52,6 @@ export default async function InvitePage({ searchParams }) {
     console.error(e);
     return <InvitationNotFound />;
   }
-}
+};
+
+export default Page;

@@ -23,12 +23,18 @@ type QuestionFilterComboBoxProps = {
   filterComboBoxValue: string | string[] | undefined;
   onChangeFilterValue: (o: string) => void;
   onChangeFilterComboBoxValue: (o: string | string[]) => void;
-  type: OptionsType.METADATA | TSurveyQuestionType | OptionsType.ATTRIBUTES | OptionsType.TAGS | undefined;
+  type:
+    | OptionsType.OTHERS
+    | TSurveyQuestionType
+    | OptionsType.ATTRIBUTES
+    | OptionsType.TAGS
+    | OptionsType.META
+    | undefined;
   handleRemoveMultiSelect: (value: string[]) => void;
   disabled?: boolean;
 };
 
-const QuestionFilterComboBox = ({
+export const QuestionFilterComboBox = ({
   filterComboBoxOptions,
   filterComboBoxValue,
   filterOptions,
@@ -184,5 +190,3 @@ const QuestionFilterComboBox = ({
     </div>
   );
 };
-
-export default QuestionFilterComboBox;

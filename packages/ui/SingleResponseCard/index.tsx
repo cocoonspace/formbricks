@@ -8,9 +8,8 @@ import { ReactNode, useState } from "react";
 import toast from "react-hot-toast";
 
 import { cn } from "@formbricks/lib/cn";
-import { getLocalizedValue } from "@formbricks/lib/i18n/utils";
-import { getLanguageCode } from "@formbricks/lib/i18n/utils";
-import { getPersonIdentifier } from "@formbricks/lib/person/util";
+import { getLanguageCode, getLocalizedValue } from "@formbricks/lib/i18n/utils";
+import { getPersonIdentifier } from "@formbricks/lib/person/utils";
 import { timeSince } from "@formbricks/lib/time";
 import { formatDateWithOrdinal } from "@formbricks/lib/utils/datetime";
 import { TEnvironment } from "@formbricks/types/environment";
@@ -26,6 +25,7 @@ import { TTag } from "@formbricks/types/tags";
 import { TUser } from "@formbricks/types/user";
 
 import { getLanguageLabel } from "../../ee/multiLanguage/lib/isoLanguages";
+import { AddressResponse } from "../AddressResponse";
 import { PersonAvatar } from "../Avatars";
 import { DeleteDialog } from "../DeleteDialog";
 import { FileUploadResponse } from "../FileUploadResponse";
@@ -34,9 +34,9 @@ import { RatingResponse } from "../RatingResponse";
 import { SurveyStatusIndicator } from "../SurveyStatusIndicator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../Tooltip";
 import { deleteResponseAction, getResponseAction } from "./actions";
-import QuestionSkip from "./components/QuestionSkip";
-import ResponseNotes from "./components/ResponseNote";
-import ResponseTagsWrapper from "./components/ResponseTagsWrapper";
+import { QuestionSkip } from "./components/QuestionSkip";
+import { ResponseNotes } from "./components/ResponseNote";
+import { ResponseTagsWrapper } from "./components/ResponseTagsWrapper";
 
 const isSubmissionTimeMoreThan5Minutes = (submissionTimeISOString: Date) => {
   const submissionTime: Date = new Date(submissionTimeISOString);
@@ -63,7 +63,7 @@ interface TooltipRendererProps {
   children: ReactNode;
 }
 
-function TooltipRenderer(props: TooltipRendererProps) {
+const TooltipRenderer = (props: TooltipRendererProps) => {
   const { children, shouldRender, tooltipContent } = props;
   if (shouldRender) {
     return (
@@ -77,16 +77,16 @@ function TooltipRenderer(props: TooltipRendererProps) {
   }
 
   return <>{children}</>;
-}
+};
 
-function DateResponse({ date }: { date?: string }) {
+const DateResponse = ({ date }: { date?: string }) => {
   if (!date) return null;
 
   const formattedDateString = formatDateWithOrdinal(new Date(date));
   return <p className="ph-no-capture my-1 font-semibold text-slate-700">{formattedDateString}</p>;
-}
+};
 
-export default function SingleResponseCard({
+export const SingleResponseCard = ({
   survey,
   response,
   user,
@@ -96,10 +96,12 @@ export default function SingleResponseCard({
   updateResponse,
   deleteResponse,
   isViewer,
-}: SingleResponseCardProps) {
+}: SingleResponseCardProps) => {
   const environmentId = survey.environmentId;
   const router = useRouter();
-  const displayIdentifier = response.person ? getPersonIdentifier(response.person) : null;
+  const displayIdentifier = response.person
+    ? getPersonIdentifier(response.person, response.personAttributes)
+    : null;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -221,6 +223,7 @@ export default function SingleResponseCard({
             </p>
           )}
           {response.meta.url && <p>URL: {response.meta.url}</p>}
+          {response.meta.action && <p>Action: {response.meta.action}</p>}
           {response.meta.source && <p>Source: {response.meta.source}</p>}
           {response.meta.country && <p>Country: {response.meta.country}</p>}
         </div>
@@ -276,7 +279,10 @@ export default function SingleResponseCard({
             );
           });
         }
-
+      case TSurveyQuestionType.Address:
+        if (Array.isArray(responseData)) {
+          return <AddressResponse value={responseData} />;
+        }
       default:
         if (
           typeof responseData === "string" ||
@@ -295,7 +301,7 @@ export default function SingleResponseCard({
     <div className={clsx("group relative", isOpen && "min-h-[300px]")}>
       <div
         className={clsx(
-          "relative z-10 my-6 rounded-lg border border-slate-200 bg-slate-50 shadow-sm transition-all",
+          "relative z-20 my-6 rounded-xl border border-slate-200 bg-white shadow-sm transition-all",
           pageType === "response" &&
             (isOpen
               ? "w-3/4"
@@ -303,42 +309,38 @@ export default function SingleResponseCard({
                 ? "w-[96.5%]"
                 : cn("w-full", user ? "group-hover:w-[96.5%]" : ""))
         )}>
-        <div className="space-y-2 px-6 pb-5 pt-6">
+        <div className="space-y-2 border-b border-slate-200 px-6 pb-4 pt-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center justify-center space-x-4">
               {pageType === "response" && (
-                <div>
-                  {response.person?.id ? (
-                    user ? (
-                      <Link
-                        className="group flex items-center"
-                        href={`/environments/${environmentId}/people/${response.person.id}`}>
-                        <TooltipRenderer shouldRender={renderTooltip} tooltipContent={tooltipContent}>
+                <TooltipRenderer shouldRender={renderTooltip} tooltipContent={tooltipContent}>
+                  <div className="group">
+                    {response.person?.id ? (
+                      user ? (
+                        <Link
+                          className="flex items-center"
+                          href={`/environments/${environmentId}/people/${response.person.id}`}>
                           <PersonAvatar personId={response.person.id} />
-                        </TooltipRenderer>
-                        <h3 className="ph-no-capture ml-4 pb-1 font-semibold text-slate-600 hover:underline">
-                          {displayIdentifier}
-                        </h3>
-                      </Link>
+                          <h3 className="ph-no-capture ml-4 pb-1 font-semibold text-slate-600 hover:underline">
+                            {displayIdentifier}
+                          </h3>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center">
+                          <PersonAvatar personId={response.person.id} />
+                          <h3 className="ph-no-capture ml-4 pb-1 font-semibold text-slate-600">
+                            {displayIdentifier}
+                          </h3>
+                        </div>
+                      )
                     ) : (
-                      <div className="group flex items-center">
-                        <TooltipRenderer shouldRender={renderTooltip} tooltipContent={tooltipContent}>
-                          <PersonAvatar personId={response.person.id} />
-                        </TooltipRenderer>
-                        <h3 className="ph-no-capture ml-4 pb-1 font-semibold text-slate-600">
-                          {displayIdentifier}
-                        </h3>
-                      </div>
-                    )
-                  ) : (
-                    <div className="group flex items-center">
-                      <TooltipRenderer shouldRender={renderTooltip} tooltipContent={tooltipContent}>
+                      <div className="flex items-center">
                         <PersonAvatar personId="anonymous" />
-                      </TooltipRenderer>
-                      <h3 className="ml-4 pb-1 font-semibold text-slate-600">Anonymous</h3>
-                    </div>
-                  )}
-                </div>
+                        <h3 className="ml-4 pb-1 font-semibold text-slate-600">Anonymous</h3>
+                      </div>
+                    )}
+                  </div>
+                </TooltipRenderer>
               )}
 
               {pageType === "people" && (
@@ -361,7 +363,7 @@ export default function SingleResponseCard({
               )}
             </div>
 
-            <div className="flex space-x-4 text-sm">
+            <div className="flex items-center space-x-4 text-sm">
               <time className="text-slate-500" dateTime={timeSince(response.updatedAt.toISOString())}>
                 {timeSince(response.updatedAt.toISOString())}
               </time>
@@ -386,7 +388,7 @@ export default function SingleResponseCard({
             </div>
           </div>
         </div>
-        <div className="rounded-b-lg bg-white p-6">
+        <div className="p-6">
           {survey.welcomeCard.enabled && (
             <QuestionSkip
               skippedQuestions={[]}
@@ -459,22 +461,23 @@ export default function SingleResponseCard({
             </div>
           )}
           {response.finished && (
-            <div className="mt-4 flex">
+            <div className="mt-4 flex items-center">
               <CheckCircle2Icon className="h-6 w-6 text-slate-400" />
-              <p className="mx-2 rounded-lg bg-slate-100 px-2 text-slate-700">Completed</p>
+              <p className="mx-2 rounded-lg bg-slate-100 px-2 text-sm font-medium text-slate-700">
+                Completed
+              </p>
             </div>
           )}
         </div>
 
-        {user && !isViewer && (
-          <ResponseTagsWrapper
-            environmentId={environmentId}
-            responseId={response.id}
-            tags={response.tags.map((tag) => ({ tagId: tag.id, tagName: tag.name }))}
-            environmentTags={environmentTags}
-            updateFetchedResponses={updateFetchedResponses}
-          />
-        )}
+        <ResponseTagsWrapper
+          environmentId={environmentId}
+          responseId={response.id}
+          tags={response.tags.map((tag) => ({ tagId: tag.id, tagName: tag.name }))}
+          environmentTags={environmentTags}
+          updateFetchedResponses={updateFetchedResponses}
+          isViewer={isViewer}
+        />
 
         <DeleteDialog
           open={deleteDialogOpen}
@@ -496,4 +499,4 @@ export default function SingleResponseCard({
       )}
     </div>
   );
-}
+};

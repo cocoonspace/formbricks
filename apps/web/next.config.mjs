@@ -1,18 +1,20 @@
 import { createId } from "@paralleldrive/cuid2";
 import { withSentryConfig } from "@sentry/nextjs";
 import createJiti from "jiti";
+import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 const jiti = createJiti(fileURLToPath(import.meta.url));
+const require = createRequire(import.meta.url);
 
 jiti("@formbricks/lib/env");
 
 /** @type {import('next').NextConfig} */
 
-function getHostname(url) {
+const getHostname = (url) => {
   const urlObj = new URL(url);
   return urlObj.hostname;
-}
+};
 
 const nextConfig = {
   assetPrefix: process.env.ASSET_PREFIX_URL || undefined,
@@ -33,6 +35,10 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "avatars.slack-edge.com",
+      },
+      {
+        protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
       {
@@ -47,7 +53,23 @@ const nextConfig = {
         protocol: "https",
         hostname: "formbricks-cdn.s3.eu-central-1.amazonaws.com",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/client/:environmentId/in-app/sync",
+        destination: "/api/v1/client/:environmentId/website/sync",
+      },
+      {
+        source: "/api/v1/client/:environmentId/in-app/sync/:userId",
+        destination: "/api/v1/client/:environmentId/app/sync/:userId",
+      },
+    ];
   },
   async redirects() {
     return [
@@ -108,6 +130,24 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: "/environments/(.*)",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+        ],
+      },
+      {
+        source: "/auth/(.*)",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+        ],
+      },
     ];
   },
   env: {
@@ -115,6 +155,11 @@ const nextConfig = {
     INTERNAL_SECRET: createId(),
   },
 };
+
+// set custom cache handler
+if (process.env.CUSTOM_CACHE_DISABLED !== "1") {
+  nextConfig.cacheHandler = require.resolve("./cache-handler.mjs");
+}
 
 // set actions allowed origins
 if (process.env.WEBAPP_URL) {

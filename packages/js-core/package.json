@@ -19,20 +19,23 @@
   "files": [
     "dist"
   ],
-  "source": "src/index.ts",
-  "main": "dist/index.umd.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.umd.cjs",
-      "types": "./dist/index.d.ts"
+    "./app": {
+      "import": "./dist/app.js",
+      "require": "./dist/app.umd.cjs",
+      "types": "./dist/app.d.ts"
+    },
+    "./website": {
+      "import": "./dist/website.js",
+      "require": "./dist/website.umd.cjs",
+      "types": "./dist/website.d.ts"
     }
   },
   "scripts": {
     "dev": "vite build --watch --mode dev",
-    "build": "tsc && vite build",
+    "build:app": "tsc && vite build --config app.vite.config.ts",
+    "build:website": "tsc && vite build --config website.vite.config.ts",
+    "build": "pnpm build:app && pnpm build:website",
     "build:dev": "tsc && vite build --mode dev",
     "go": "vite build --watch --mode dev",
     "lint": "eslint ./src --fix",
@@ -40,18 +43,13 @@
   },
   "author": "Formbricks <hola@formbricks.com>",
   "devDependencies": {
-    "@babel/preset-env": "^7.24.0",
-    "@babel/preset-typescript": "^7.23.3",
     "@formbricks/api": "workspace:*",
     "@formbricks/lib": "workspace:*",
     "@formbricks/tsconfig": "workspace:*",
     "@formbricks/types": "workspace:*",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-config-turbo": "1.10.12",
-    "terser": "^5.29.1",
-    "vite": "^5.1.6",
-    "vite-plugin-dts": "^3.7.3"
+    "eslint-config-formbricks": "workspace:*",
+    "terser": "^5.31.0",
+    "vite": "^5.2.11",
+    "vite-plugin-dts": "^3.9.1"
   }
 }

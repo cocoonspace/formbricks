@@ -2,13 +2,16 @@ import { responses } from "@/app/lib/api/response";
 import fs from "fs/promises";
 import { NextRequest } from "next/server";
 
-export async function GET(_: NextRequest, { params }: { params: { slug: string } }) {
+export const GET = async (_: NextRequest, { params }: { params: { slug: string } }) => {
   let path: string;
   const packageRequested = params["package"];
 
   switch (packageRequested) {
-    case "js-core":
-      path = `../../packages/js-core/dist/index.umd.cjs`;
+    case "app":
+      path = `../../packages/js-core/dist/app.umd.cjs`;
+      break;
+    case "website":
+      path = `../../packages/js-core/dist/website.umd.cjs`;
       break;
     case "surveys":
       path = `../../packages/surveys/dist/index.umd.cjs`;
@@ -39,4 +42,4 @@ export async function GET(_: NextRequest, { params }: { params: { slug: string }
       "public, s-maxage=600, max-age=1800, stale-while-revalidate=600, stale-if-error=600"
     );
   }
-}
+};

@@ -2,13 +2,14 @@ import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
-import formbricks from "@formbricks/js";
+import formbricks from "@formbricks/js/app";
 
+import { SurveySwitch } from "../../components/SurveySwitch";
 import fbsetup from "../../public/fb-setup.png";
 
 declare const window: any;
 
-export default function AppPage({}) {
+const AppPage = ({}) => {
   const [darkMode, setDarkMode] = useState(false);
   const router = useRouter();
 
@@ -30,22 +31,22 @@ export default function AppPage({}) {
         window.history.replaceState({}, "", newUrl);
       }
     };
+
     addFormbricksDebugParam();
 
     if (process.env.NEXT_PUBLIC_FORMBRICKS_ENVIRONMENT_ID && process.env.NEXT_PUBLIC_FORMBRICKS_API_HOST) {
-      const isUserId = window.location.href.includes("userId=true");
-      const defaultAttributes = {
-        language: "gu",
+      const userId = "THIS-IS-A-VERY-LONG-USER-ID-FOR-TESTING";
+      const userInitAttributes = {
+        language: "de",
+        "Init Attribute 1": "eight",
+        "Init Attribute 2": "two",
       };
-      const userInitAttributes = { "Init Attribute 1": "eight", "Init Attribute 2": "two" };
 
-      const attributes = isUserId ? { ...defaultAttributes, ...userInitAttributes } : defaultAttributes;
-      const userId = isUserId ? "THIS-IS-A-VERY-LONG-USER-ID-FOR-TESTING" : undefined;
       formbricks.init({
         environmentId: process.env.NEXT_PUBLIC_FORMBRICKS_ENVIRONMENT_ID,
         apiHost: process.env.NEXT_PUBLIC_FORMBRICKS_API_HOST,
         userId,
-        attributes,
+        attributes: userInitAttributes,
       });
     }
 
@@ -63,15 +64,19 @@ export default function AppPage({}) {
   return (
     <div className="h-screen bg-white px-12 py-6 dark:bg-slate-800">
       <div className="flex flex-col justify-between md:flex-row">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-            Formbricks In-product Survey Demo App
-          </h1>
-          <p className="text-slate-700 dark:text-slate-300">
-            This app helps you test your in-app surveys. You can create and test user actions, create and
-            update user attributes, etc.
-          </p>
+        <div className="flex items-center gap-2">
+          <SurveySwitch value="app" formbricks={formbricks} />
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Formbricks In-product Survey Demo App
+            </h1>
+            <p className="text-slate-700 dark:text-slate-300">
+              This app helps you test your app surveys. You can create and test user actions, create and
+              update user attributes, etc.
+            </p>
+          </div>
         </div>
+
         <button
           className="mt-2 rounded-lg bg-slate-200 px-6 py-1 dark:bg-slate-700 dark:text-slate-100"
           onClick={() => setDarkMode(!darkMode)}>
@@ -114,7 +119,7 @@ export default function AppPage({}) {
         </div>
 
         <div className="md:grid md:grid-cols-3">
-          <div className="col-span-3 rounded-lg border border-slate-300 bg-slate-100 p-6 dark:border-slate-600 dark:bg-slate-800">
+          <div className="col-span-3 self-start rounded-lg border border-slate-300 bg-slate-100 p-6 dark:border-slate-600 dark:bg-slate-800">
             <h3 className="text-lg font-semibold dark:text-white">
               Reset person / pull data from Formbricks app
             </h3>
@@ -135,26 +140,6 @@ export default function AppPage({}) {
             </p>
           </div>
 
-          <div className="p-6">
-            <div>
-              <button
-                className="mb-4 rounded-lg bg-slate-800 px-6 py-3 text-white hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-slate-600"
-                onClick={() => {
-                  formbricks.track("Code Action");
-                }}>
-                Code Action
-              </button>
-            </div>
-            <div>
-              <p className="text-xs text-slate-700 dark:text-slate-300">
-                This button sends a{" "}
-                <a href="https://formbricks.com/docs/actions/code" className="underline" target="_blank">
-                  Code Action
-                </a>{" "}
-                to the Formbricks API called &apos;Code Action&apos;. You will find it in the Actions Tab.
-              </p>
-            </div>
-          </div>
           <div className="p-6">
             <div>
               <button className="mb-4 rounded-lg bg-slate-800 px-6 py-3 text-white hover:bg-slate-700  dark:bg-slate-700 dark:hover:bg-slate-600">
@@ -249,43 +234,10 @@ export default function AppPage({}) {
               </p>
             </div>
           </div>
-          <div className="p-6">
-            {router.query.userId === "true" ? (
-              <div>
-                <button
-                  onClick={() => {
-                    window.location.href = "/app";
-                  }}
-                  className="mb-4 rounded-lg bg-slate-800 px-6 py-3 text-white hover:bg-slate-700  dark:bg-slate-700 dark:hover:bg-slate-600">
-                  Deactivate User Identification
-                </button>
-              </div>
-            ) : (
-              <div>
-                <button
-                  onClick={() => {
-                    window.location.href = "/app?userId=true";
-                  }}
-                  className="mb-4 rounded-lg bg-slate-800 px-6 py-3 text-white hover:bg-slate-700  dark:bg-slate-700 dark:hover:bg-slate-600">
-                  Activate User Identification
-                </button>
-              </div>
-            )}
-            <div>
-              <p className="text-xs text-slate-700 dark:text-slate-300">
-                This button activates/deactivates{" "}
-                <a
-                  href="https://formbricks.com/docs/attributes/identify-users"
-                  target="_blank"
-                  className="underline dark:text-blue-500">
-                  user identification
-                </a>{" "}
-                with the userId &apos;THIS-IS-A-VERY-LONG-USER-ID-FOR-TESTING&apos;
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default AppPage;

@@ -6,6 +6,7 @@ import { RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-hot-toast";
 
 import { extractLanguageCodes, getEnabledLanguages, getLocalizedValue } from "@formbricks/lib/i18n/utils";
+import { structuredClone } from "@formbricks/lib/pollyfills/structuredClone";
 import { useSyncScroll } from "@formbricks/lib/utils/hooks/useSyncScroll";
 import {
   extractId,
@@ -21,11 +22,11 @@ import { TI18nString, TSurvey, TSurveyChoice, TSurveyQuestion } from "@formbrick
 
 import { LanguageIndicator } from "../../ee/multiLanguage/components/LanguageIndicator";
 import { createI18nString } from "../../lib/i18n/utils";
-import FileInput from "../FileInput";
+import { FileInput } from "../FileInput";
 import { Input } from "../Input";
 import { Label } from "../Label";
 import { FallbackInput } from "./components/FallbackInput";
-import RecallQuestionSelect from "./components/RecallQuestionSelect";
+import { RecallQuestionSelect } from "./components/RecallQuestionSelect";
 import { isValueIncomplete } from "./lib/utils";
 import {
   determineImageUploaderVisibility,
@@ -76,13 +77,16 @@ export const QuestionFormInput = ({
   className,
 }: QuestionFormInputProps) => {
   const question: TSurveyQuestion = localSurvey.questions[questionIdx];
-  const questionId = question?.id;
   const isChoice = id.includes("choice");
   const isMatrixLabelRow = id.includes("row");
   const isMatrixLabelColumn = id.includes("column");
   const isThankYouCard = questionIdx === localSurvey.questions.length;
   const isWelcomeCard = questionIdx === -1;
   const index = getIndex(id, isChoice || isMatrixLabelColumn || isMatrixLabelRow);
+
+  const questionId = useMemo(() => {
+    return isWelcomeCard ? "start" : isThankYouCard ? "end" : question.id;
+  }, [isWelcomeCard, isThankYouCard, question?.id]);
 
   const enabledLanguages = useMemo(
     () => getEnabledLanguages(localSurvey.languages ?? []),
@@ -120,7 +124,7 @@ export const QuestionFormInput = ({
   const [text, setText] = useState(getElementTextBasedOnType());
   const [renderedText, setRenderedText] = useState<JSX.Element[]>();
   const [showImageUploader, setShowImageUploader] = useState<boolean>(
-    determineImageUploaderVisibility(questionId, localSurvey)
+    determineImageUploaderVisibility(questionIdx, localSurvey)
   );
   const [showQuestionSelect, setShowQuestionSelect] = useState(false);
   const [showFallbackInput, setShowFallbackInput] = useState(false);
@@ -368,26 +372,41 @@ export const QuestionFormInput = ({
     else return question.imageUrl;
   };
 
+  const getVideoUrl = () => {
+    if (isThankYouCard) return localSurvey.thankYouCard.videoUrl;
+    else if (isWelcomeCard) return localSurvey.welcomeCard.videoUrl;
+    else return question.videoUrl;
+  };
+
   return (
     <div className="w-full">
       <div className="w-full">
         <div className="mb-2 mt-3">
-          <Label htmlFor={id}>{label ?? getLabelById(id)}</Label>
+          <Label htmlFor={id}>{getLabelById(id)}</Label>
         </div>
-        <div className="flex flex-col gap-6">
+
+        <div className="flex flex-col gap-4 bg-white">
           {showImageUploader && id === "headline" && (
             <FileInput
               id="question-image"
               allowedFileExtensions={["png", "jpeg", "jpg"]}
               environmentId={localSurvey.environmentId}
-              onFileUpload={(url: string[] | undefined) => {
-                if (isThankYouCard && updateSurvey && url) {
-                  updateSurvey({ imageUrl: url[0] });
-                } else if (updateQuestion && url) {
-                  updateQuestion(questionIdx, { imageUrl: url[0] });
+              onFileUpload={(url: string[] | undefined, fileType: "image" | "video") => {
+                if (url) {
+                  const update =
+                    fileType === "video"
+                      ? { videoUrl: url[0], imageUrl: "" }
+                      : { imageUrl: url[0], videoUrl: "" };
+                  if (isThankYouCard && updateSurvey) {
+                    updateSurvey(update);
+                  } else if (updateQuestion) {
+                    updateQuestion(questionIdx, update);
+                  }
                 }
               }}
               fileUrl={getFileUrl()}
+              videoUrl={getVideoUrl()}
+              isVideoAllowed={true}
             />
           )}
           <div className="flex items-center space-x-2">
@@ -456,7 +475,7 @@ export const QuestionFormInput = ({
                 />
               )}
             </div>
-            {id === "headline" && (
+            {id === "headline" && !isWelcomeCard && (
               <ImagePlusIcon
                 aria-label="Toggle image uploader"
                 className="ml-2 h-4 w-4 cursor-pointer text-slate-400 hover:text-slate-500"
